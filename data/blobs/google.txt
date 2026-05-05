@@ -1,0 +1,22 @@
+Security Alert,
+
+We detected a new sign-in to your Google account from an unrecognized device.
+
+Details:
+
+* Location: Unknown
+* Device: New browser session
+* Time: Recently
+
+If this was you, no further action is required.
+
+If you do not recognize this activity, we strongly recommend that you:
+
+* Change your password immediately
+* Review your recent account activity
+* Enable two-factor authentication
+
+You can review your account security settings at any time.
+
+Stay safe,
+Google Security Team

@@ -1,0 +1,37 @@
+Hello,
+
+We are currently looking for a Backend Python Developer to join our team.
+
+Position: Backend Engineer (Python)
+Location: Remote / Hybrid
+Employment type: Full-time
+
+Responsibilities:
+
+* Develop and maintain backend services
+* Design and optimize APIs
+* Work with databases and messaging systems
+* Collaborate with cross-functional teams
+
+Requirements:
+
+* Strong experience with Python
+* Familiarity with FastAPI or similar frameworks
+* Experience with SQL databases
+* Understanding of asynchronous programming
+
+Nice to have:
+
+* Experience with Kafka or similar systems
+* Knowledge of Docker and CI/CD
+
+We offer:
+
+* Competitive salary
+* Flexible working hours
+* Opportunity to work on scalable systems
+* Friendly and professional team
+
+If you are interested, please reply to this message or send your CV.
+
+Best regards
