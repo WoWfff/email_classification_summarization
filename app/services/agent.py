@@ -4,6 +4,8 @@ from langchain.chat_models import init_chat_model
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 
+from app.config import LLM_MODEL_NAME
+
 
 class State(TypedDict):
     subject: str
@@ -49,7 +51,7 @@ class MessageSummarizer(BaseModel):
     )
 
 
-llm = init_chat_model(model="google_genai:gemma-4-31b-it")
+llm = init_chat_model(model=LLM_MODEL_NAME)
 classifier_llm = llm.with_structured_output(MessageClassifier)
 summarizer_llm = llm.with_structured_output(MessageSummarizer)
 

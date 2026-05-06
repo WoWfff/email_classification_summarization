@@ -14,10 +14,12 @@ from app.models.kafka_models import ClassificationResult, InputMessage, Summariz
 from app.services.agent import State, graph
 from app.services.blob_storage import FileSystemBlobStorage
 from app.services.containers import create_kafka, create_postgres
+from app.services.create_test_data import create_test_data
 from app.services.db import Database
 from app.services.kafka import Consumer, Producer
 
 # Configuration
+create_test_data()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 storage = FileSystemBlobStorage(Path("data/blobs"))
