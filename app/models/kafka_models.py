@@ -10,10 +10,10 @@ class InputMessage(BaseModel):
 class ClassificationResult(BaseModel):
     recipients: list[str]
     subject: str
-    classification: dict
+    classification: str | None = None
 
 
 class SummarizationResult(BaseModel):
     recipients: list[str]
     subject: str
-    summary: str
+    summary: str | None = None

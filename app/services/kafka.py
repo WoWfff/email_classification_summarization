@@ -14,12 +14,20 @@ class Producer:
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         )
 
-    async def __aenter__(self):
+    async def start(self):
         await self.producer.start()
+        logger.info("Producer started.")
+
+    async def stop(self):
+        await self.producer.stop()
+        logger.info("Producer stopped.")
+
+    async def __aenter__(self):
+        await self.start()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.producer.stop()
+        await self.stop()
 
     async def send(self, topic: str, message: BaseModel, key: bytes | None = None) -> None:
         try:
