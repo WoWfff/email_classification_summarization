@@ -4,13 +4,13 @@ from langchain.chat_models import init_chat_model
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 
-from app.config import LLM_MODEL_NAME
-from app.services.ai.prompts import (
+from app.ai.prompts import (
     CLASSIFICATION_PROMPT_TEMPLATE,
     MESSAGE_CLASSIFIER_DESCRIPTION,
     MESSAGE_SUMMARIZER_DESCRIPTION,
     SUMMARIZATION_PROMPT_TEMPLATE,
 )
+from app.config import LLM_MODEL_NAME
 
 
 class State(TypedDict):
@@ -60,13 +60,13 @@ async def summarize_email(state: State) -> dict:
 
 
 async def classify_email(state: State) -> dict:
-    messages = await CLASSIFICATION_PROMPT_TEMPLATE.aformat_messages(
-        subject=state["subject"],
-        summary=state["summary"],
-    )
+    chain = CLASSIFICATION_PROMPT_TEMPLATE | classifier_llm
     result = cast(
         MessageClassifier,
-        await classifier_llm.ainvoke(messages),
+        await chain.ainvoke({
+            "subject": state["subject"],
+            "summary": state["summary"],
+        }),
     )
     return {"classification": result.message_classification}
 

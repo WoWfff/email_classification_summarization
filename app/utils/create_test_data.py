@@ -1,5 +1,8 @@
 # create_test_data.py
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 DATA = {
     "monday_schedule.txt": """Good morning,
@@ -100,4 +103,4 @@ def create_test_data() -> None:
     base.mkdir(parents=True, exist_ok=True)
     for filename, content in DATA.items():
         (base / filename).write_text(content, encoding="utf-8")
-    print("Test blob files created.")
+    logger.info("Test blob files created.")

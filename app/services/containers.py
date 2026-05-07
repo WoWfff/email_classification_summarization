@@ -1,7 +1,7 @@
 import logging
 
-from testcontainers.kafka import KafkaContainer
-from testcontainers.postgres import PostgresContainer
+from testcontainers.kafka import KafkaContainer  # type: ignore
+from testcontainers.postgres import PostgresContainer  # type: ignore
 
 from app.config import POSTGRES_DB, POSTGRESQL_DRIVER
 

@@ -2,6 +2,7 @@ import asyncio
 import logging
 from pathlib import Path
 
+from app.ai.agent import State, graph
 from app.config import (
     KAFKA_CLASSIFICATION_CONSUMER_GROUP_ID,
     KAFKA_CLASSIFICATION_TOPIC,
@@ -10,13 +11,13 @@ from app.config import (
     KAFKA_SUMMARIZATION_CONSUMER_GROUP_ID,
     KAFKA_SUMMARIZATION_TOPIC,
 )
-from app.models.kafka_models import ClassificationResult, InputMessage, SummarizationResult
-from app.services.ai.agent import State, graph
+from app.kafka.consumer import Consumer
+from app.kafka.producer import Producer
+from app.models.kafka import ClassificationResult, InputMessage, SummarizationResult
 from app.services.blob_storage import FileSystemBlobStorage
 from app.services.containers import create_kafka, create_postgres
-from app.services.create_test_data import create_test_data
-from app.services.db import MessagesService
-from app.services.kafka import Consumer, Producer
+from app.services.messages import MessagesService
+from app.utils.create_test_data import create_test_data
 
 # Configuration
 create_test_data()
@@ -49,11 +50,11 @@ messages = [
 ]
 
 
-async def process_input_messages(consumer: Consumer, producer: Producer, db: MessagesService):
+async def process_input_messages(consumer: Consumer, producer: Producer, messages_service: MessagesService):
     try:
         async for msg in consumer:
-            db_msg = None
-            print("\n")
+            saved_message = None
+            print("\n")  # Remove on prod, designed for readability
             try:
                 logger.info(f"Got message from topic={msg.topic}, partition={msg.partition}, offset={msg.offset}")
                 email_msg = InputMessage.model_validate(msg.value)
@@ -61,11 +62,17 @@ async def process_input_messages(consumer: Consumer, producer: Producer, db: Mes
                 body = await storage.read_text(email_msg.body_blob_path)
 
                 # Writing received message to PostgreSQL
-                db_msg = await db.write_message(
+                saved_message = await messages_service.write_message(
+                    message_id=email_msg.message_id,
                     recipients=email_msg.recipients,
                     subject=email_msg.subject,
                     body_blob_path=email_msg.body_blob_path,
                 )
+
+                if saved_message is None:
+                    logger.info(f"Skipping duplicate message_id={email_msg.message_id}")
+                    await consumer.commit()
+                    continue
 
                 # Initializing start graph
                 initial_state = State(
@@ -81,8 +88,8 @@ async def process_input_messages(consumer: Consumer, producer: Producer, db: Mes
                 summary: str = ai_result["summary"]
 
                 # Writing results from langgraph to PostgreSQL
-                db_msg = await db.update_message(
-                    message_id=db_msg.id,
+                saved_message = await messages_service.update_message(
+                    message_id=saved_message.id,
                     status="processed",
                     classification=classification,
                     summary=summary,
@@ -91,6 +98,7 @@ async def process_input_messages(consumer: Consumer, producer: Producer, db: Mes
 
                 # Sending classification message to Kafka topic
                 cls_msg = ClassificationResult(
+                    message_id=email_msg.message_id,
                     recipients=email_msg.recipients,
                     subject=email_msg.subject,
                     classification=classification,
@@ -103,6 +111,7 @@ async def process_input_messages(consumer: Consumer, producer: Producer, db: Mes
 
                 # Sending summarization message to Kafka topic
                 sum_msg = SummarizationResult(
+                    message_id=email_msg.message_id,
                     recipients=email_msg.recipients,
                     subject=email_msg.subject,
                     summary=summary,
@@ -117,9 +126,9 @@ async def process_input_messages(consumer: Consumer, producer: Producer, db: Mes
 
             except Exception as e:
                 logger.exception(f"Error processing input message: {e}")
-                if db_msg is not None:
-                    await db.update_message(
-                        message_id=db_msg.id,
+                if saved_message is not None:
+                    await messages_service.update_message(
+                        message_id=saved_message.id,
                         status="failed",
                         classification=None,
                         summary=None,
@@ -158,8 +167,8 @@ async def main():
     postgres_url, postgres_cont = create_postgres()
     kafka_bootstrap, kafka_cont = create_kafka()
 
-    db = MessagesService(url=postgres_url)
-    await db.connect()
+    messages_service = MessagesService(url=postgres_url)
+    await messages_service.connect()
 
     producer = Producer(kafka_bootstrap)
     await producer.start()
@@ -190,13 +199,13 @@ async def main():
     try:
         # Working demonstration
         await asyncio.gather(
-            process_input_messages(input_consumer, producer, db),
+            process_input_messages(input_consumer, producer, messages_service),
             consume_classification_results(classification_consumer),
             consume_summarization_results(summarization_consumer),
         )
     finally:
         await producer.stop()
-        await db.close()
+        await messages_service.close()
         postgres_cont.stop()
         kafka_cont.stop()
 
