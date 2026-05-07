@@ -21,7 +21,7 @@ class Message(Base):
     body_blob_path: Mapped[str] = mapped_column(String, nullable=False)
 
     # AI results
-    classification: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    classification: Mapped[str | None] = mapped_column(String, nullable=True)
     summarization: Mapped[str | None] = mapped_column(String, nullable=True)
 
     status: Mapped[str] = mapped_column(String(20), default="pending")

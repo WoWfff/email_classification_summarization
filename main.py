@@ -51,8 +51,8 @@ messages = [
 
 async def process_input_messages(consumer: Consumer, producer: Producer, db: Database):
     try:
-        db_msg = None
         async for msg in consumer:
+            db_msg = None
             print("\n")
             try:
                 logger.info(f"Got message from topic={msg.topic}, partition={msg.partition}, offset={msg.offset}")
@@ -125,6 +125,7 @@ async def process_input_messages(consumer: Consumer, producer: Producer, db: Dat
                         summary=None,
                         error_message=str(e),
                     )
+                await consumer.commit()
     finally:
         await consumer.stop()
 
@@ -154,8 +155,8 @@ async def consume_summarization_results(consumer: Consumer):
 
 
 async def main():
-    postgres_url = create_postgres()
-    kafka_bootstrap = create_kafka()
+    postgres_url, postgres_cont = create_postgres()
+    kafka_bootstrap, kafka_cont = create_kafka()
 
     db = Database(url=postgres_url)
     await db.connect()
@@ -196,6 +197,8 @@ async def main():
     finally:
         await producer.stop()
         await db.close()
+        postgres_cont.stop()
+        kafka_cont.stop()
 
 
 if __name__ == "__main__":

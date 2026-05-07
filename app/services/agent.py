@@ -127,7 +127,7 @@ async def classify_email(state: State) -> dict:
                 },
                 {
                     "role": "user",
-                    "content": state["body"],
+                    "content": f"Subject: {state['subject']}\n\n{state['body']}",
                 },
             ]
         ),
