@@ -11,11 +11,11 @@ from app.config import (
     KAFKA_SUMMARIZATION_TOPIC,
 )
 from app.models.kafka_models import ClassificationResult, InputMessage, SummarizationResult
-from app.services.agent import State, graph
+from app.services.ai.agent import State, graph
 from app.services.blob_storage import FileSystemBlobStorage
 from app.services.containers import create_kafka, create_postgres
 from app.services.create_test_data import create_test_data
-from app.services.db import Database
+from app.services.db import MessagesService
 from app.services.kafka import Consumer, Producer
 
 # Configuration
@@ -49,7 +49,7 @@ messages = [
 ]
 
 
-async def process_input_messages(consumer: Consumer, producer: Producer, db: Database):
+async def process_input_messages(consumer: Consumer, producer: Producer, db: MessagesService):
     try:
         async for msg in consumer:
             db_msg = None
@@ -60,7 +60,7 @@ async def process_input_messages(consumer: Consumer, producer: Producer, db: Dat
 
                 body = await storage.read_text(email_msg.body_blob_path)
 
-                # Writing received message to PostgreSQL database
+                # Writing received message to PostgreSQL
                 db_msg = await db.write_message(
                     recipients=email_msg.recipients,
                     subject=email_msg.subject,
@@ -80,7 +80,7 @@ async def process_input_messages(consumer: Consumer, producer: Producer, db: Dat
                 classification: str = ai_result["classification"]
                 summary: str = ai_result["summary"]
 
-                # Writing results from langgraph to PostgreSQL database
+                # Writing results from langgraph to PostgreSQL
                 db_msg = await db.update_message(
                     message_id=db_msg.id,
                     status="processed",
@@ -158,7 +158,7 @@ async def main():
     postgres_url, postgres_cont = create_postgres()
     kafka_bootstrap, kafka_cont = create_kafka()
 
-    db = Database(url=postgres_url)
+    db = MessagesService(url=postgres_url)
     await db.connect()
 
     producer = Producer(kafka_bootstrap)

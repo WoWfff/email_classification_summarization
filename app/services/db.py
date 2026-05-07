@@ -10,7 +10,7 @@ from app.models.db_models import Base, Message
 logger = logging.getLogger(__name__)
 
 
-class Database:
+class MessagesService:
     def __init__(self, url: str):
         self.engine = create_async_engine(url, echo=False)
         self.async_session = async_sessionmaker(self.engine, expire_on_commit=False)
